@@ -5,3 +5,4 @@ The Office of the Deputy Chief Management Officer annually delivers the BEA for 
 
 Description:
 The SV-6 (Systems Resource Flow Matrix) is one of many system views that comprise the BEA.  It shows the information exchanges (IEs) between automated BEA systems.  The visualization below represents the matrix as a chord diagram. The BEA systems are aggregated based on System Node (Core Business Mission). These eight System Nodes, represented as arcs, are positioned along the circumference of a circle. The IEs between System Nodes are represented as quadratic Bézier curves. IE directionality is represented by arc color. The size of the curve indicates the volume of IEs. Hover over a curve to see the number of IEs between System Nodes.
+ 
