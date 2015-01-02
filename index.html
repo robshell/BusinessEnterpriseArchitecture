@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+	<meta charset="utf-8">
+	<title>BEA 10 System Node IEs Chord Diagram</title>
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+	<style>
+	#visual {
+		padding-top: 10px;
+		font-family: 'Open Sans', sans-serif;
+		font-size: 12px;
+		position: relative;
+		left: 5px;
+	}
+
+	#pageTitle {
+		font-family: 'Open Sans', sans-serif;
+		font-size: 24px;
+		font-weight: bold;
+	}
+
+	#backgroundDiv {
+		padding-top: 10px;
+		font-family: 'Open Sans', sans-serif;
+		font-size: 13px;
+		width: 1024px;
+	}
+
+	#descrDiv {
+		padding-top: 10px;
+		font-family: 'Open Sans', sans-serif;
+		font-size: 13px;
+		width: 1024px;
+		text-align: justify;
+	}
+
+	/* Styles for the legend */
+	#sysNodeDefs {
+		font-family: 'Open Sans', sans-serif;
+		font-size: 11px;
+		width: 1024px;
+		position: absolute;
+		top: 250px;
+		left: 690px;
+	}
+
+	/* Styles for System Nodes description below the legend */
+	#SysNodeDesc {
+		font-family: 'Open Sans', sans-serif;
+		font-size: 12px;
+		width: 340px;
+		position: absolute;
+		top: 430px;
+		left: 692px;
+		text-align: justify;
+	}
+
+	/* Footer showing the source of the visualization data */
+	#dataSource {
+		position:absolute;
+		top: 675px;
+		text-align: right;
+		font-family: 'Open Sans', sans-serif;
+		font-size: 10px;
+		width: 1024px;
+	}
+
+	.chord path {
+	  fill-opacity: .65;
+	  stroke: #000;
+	  stroke-width: .35px;
+	}
+
+	@media only screen and (min-device-width: 320px) and (max-device-width: 568px) {
+	  #visual {
+		-webkit-user-select: none;
+		font-size: 1.2em;
+	  }
+	}
+
+	@media only screen and (min-device-width: 768px) and (max-device-width: 1024px) {
+	  #visual {
+		-webkit-user-select: none;
+	  }
+	}
+	</style>
+	<body>
+		<script src="http://d3js.org/d3.v3.min.js"></script>
+		<script>
+			var visual = document.getElementById("visual");
+
+			// interfaces between Enterprise, External, FM, GSA, HRM, MSSM, RPILM, and WSLM
+			var matrix = [
+			  [ 3, 0, 10, 0, 1, 0, 0, 1 ],
+			  [ 0, 0, 115, 5, 45, 32, 6, 5 ],
+			  [ 7, 87, 234, 0, 47, 26, 8, 6 ],
+			  [ 1, 5, 0, 6, 0, 9, 0, 0 ],
+			  [ 0, 16, 101, 0, 46, 3, 5, 0 ],
+			  [ 2, 17, 76, 7, 37, 65, 2, 11 ],
+			  [ 0, 9, 18, 0, 7, 5, 67, 0 ],
+			  [ 0, 8, 4, 0, 0, 5, 0, 14 ]
+			];
+
+			var array = [ "Enterprise", "External", "FM", "GSA", "HRM", "MSSM", "RPILM", "WSLM" ];
+
+			var rotation = 0.0;
+
+			var chord_options = {
+				"gnames": array,
+				"rotation": rotation,
+				"colors": ["#e41a1c","#377eb8","#4daf4a","#984ea3","#ff7f00","#ffff33","#a65628", "#f781bf"]
+			};
+
+			function Chord(container, options, matrix) {
+
+				// initialize the chord configuration variables
+				var config = {
+					width: 640,
+					height: 560,
+					rotation: 0,
+					textgap: 26,
+					colors: ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00", "#ffff33", "#a65628", "#f781bf"]
+				};
+
+				// add options to the chord configuration object
+				if (options) {
+					extend(config, options);
+				}
+
+				// set chord visualization variables from the configuration object
+				var offset = Math.PI * config.rotation,
+					width = config.width,
+					height = config.height,
+					textgap = config.textgap
+					colors = config.colors;
+
+				// set viewBox and aspect ratio to enable a resize of the visual dimensions
+				var viewBoxDimensions = "0 0 " + width + " " + height,
+					aspect = width / height;
+
+				if (config.gnames) {
+					gnames = config.gnames;
+				} else {
+					// make a list of names
+					gnames = [];
+					for (var i=97; i<matrix.length; i++) {
+						gnames.push(String.fromCharCode(i));
+					}
+				}
+
+				// start the d3 magic
+				var chord = d3.layout.chord()
+					.padding(.05)
+					.sortSubgroups(d3.descending)
+					.matrix(matrix);
+
+				var innerRadius = Math.min(width, height) * .31,
+					outerRadius = innerRadius * 1.15;
+
+				var fill = d3.scale.ordinal()
+					.domain(d3.range(matrix.length-1))
+					.range(colors);
+
+				var svg = d3.select("body").append("svg")
+					.attr("id", "visual")
+					.attr("viewBox", viewBoxDimensions)
+					.attr("preserveAspectRatio", "xMinYMid")    // add viewBox and preserveAspectRatio
+					.attr("width", width)
+					.attr("height", height)
+				  .append("g")
+					.attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+				var g = svg.selectAll("g.group")
+					.data(chord.groups)
+				  .enter().append("svg:g")
+					.attr("class", "group");
+
+				g.append("svg:path")
+					.style("fill", function(d) { return fill(d.index); })
+					.style("stroke", function(d) { return fill(d.index); })
+					.attr("id", function(d, i) { return "group" + d.index; })
+					.attr("d", d3.svg.arc().innerRadius(innerRadius).outerRadius(outerRadius).startAngle(startAngle).endAngle(endAngle))
+					.on("mouseover", fade(.07))
+					.on("mouseout", fade(1));
+
+				g.append("svg:text")
+					.each(function(d) {d.angle = ((d.startAngle + d.endAngle) / 2) + offset; })
+					.attr("dy", ".35em")
+					.attr("text-anchor", function(d) { return d.angle > Math.PI ? "end" : null; })
+					.attr("transform", function(d) {
+						return "rotate(" + (d.angle * 180 / Math.PI - 90) + ")"
+							+ "translate(" + (outerRadius + textgap) + ")"
+							+ (d.angle > Math.PI ? "rotate(180)" : "");
+					  })
+					.text(function(d) { return gnames[d.index]; });
+
+				svg.append("g")
+					.attr("class", "chord")
+				  .selectAll("path")
+					.data(chord.chords)
+				  .enter().append("path")
+					.attr("d", d3.svg.chord().radius(innerRadius).startAngle(startAngle).endAngle(endAngle))
+					.style("fill", function(d) { return fill(d.source.index); })
+					.style("opacity", 1)
+				  .append("svg:title")
+					.text(function(d) {
+						var t = d.source.value == 1 ? " interface from " : " interfaces from ";
+						return  d.source.value + t + gnames[d.source.index] + " to " + gnames[d.target.index];
+					});
+
+				// helper functions start here
+
+				function startAngle(d) {
+					return d.startAngle + offset;
+				}
+
+				function endAngle(d) {
+					return d.endAngle + offset;
+				}
+
+				function extend(a, b) {
+					for( var i in b ) {
+						a[ i ] = b[ i ];
+					}
+				}
+
+				// Returns an event handler for fading a given chord group.
+				function fade(opacity) {
+
+					return function(g, i) {
+						sysNodeHover(gnames[i]);
+						svg.selectAll(".chord path")
+							.filter(function(d) { return d.source.index != i && d.target.index != i; })
+							.transition()
+							.style("opacity", opacity);
+					};
+				}
+
+				window.onresize = function() {
+					var targetWidth = (window.innerWidth < width)? window.innerWidth : width;
+
+					var svg = d3.select("#visual")
+						.attr("width", targetWidth)
+						.attr("height", targetWidth / aspect);
+				}
+
+			}
+
+			window.onload = function() {
+				Chord(visual, chord_options, matrix);
+			}
+
+			d3.select(self.frameElement).style("height", "600px");
+		</script>
+		<script>
+			function sysNodeHover(sysNode){
+				var x;
+
+				x = (typeof (sysNode) == "string") ? sysNode : sysNode.innerHTML;
+
+				var descr = "<b>" + x + ":</b><br/>";
+				switch (x)
+				{
+					case "Enterprise":
+						descr += "The DoD Enterprise system node contains systems that have common internal DoD systems as well as certain external systems.";
+						break;
+					case "External":
+						descr += "The External system node contains Non-DoD systems that interact with the Department of Defense.";
+						break;
+					case "FM":
+						descr += "The Financial Management (FM) node contains systems that provide accurate and reliable financial information in support of the Planning, Programming, Budgeting, and Execution (PPBE) process to ensure adequate financial resources for DoD mission requirements. In addition, the systems provide the conduct, output, and performance of Warfighter operations and missions - both in total and varying levels of organizational, operational, and resource detail; including ongoing, completed, or projected programs in support of Warfighter requirements.";
+						break;
+					case "GSA":
+					    descr += "The General Services Administration (GSA) is an independent agency of the United States government, established in 1949 to help manage and support the basic functioning of federal agencies. The GSA supplies products and communications for U.S. government offices, provides transportation and office space to federal employees, and develops government wide cost-minimizing policies, among other management tasks. Its stated mission is to \"help federal agencies better serve the public by offering, at best value, superior workplaces, expert solutions, acquisition services and management policies\".";
+					    break;
+					case "HRM":
+					    descr += "The Human Resources Management (HRM) system node contains systems that support all personnel processes related to acquiring, training, and preparing personnel to populate Warfighter and support organizations. This includes timely and accurate access to all applicable compensation and benefits for all DoD personnel.";
+					    break;
+					case "MSSM":
+					    descr += "The Materiel Supply and Service Management (MSSM) system node contains systems that provide readiness of non-deployed and deployed Warfighters in support of Operational Tempo (OPTEMPO). These systems are associated with requesting, acquiring, sourcing, storing, transporting, receiving and accepting, monitoring payment, asset accountability, and disposing of supplies.";
+					    break;
+					case "RPILM":
+					    descr += "The Real Property and Installation Lifecycle Management (RPILM) node contains systems that provide support of installations and facilities for military forces, storage and maintenance of military equipment, training, and deployment. The systems also support accountability of real property assets and resources, disposal of property, and environmental security of assets including damage and remediation.";
+					    break;
+					case "WSLM":
+					    descr += "The Weapon System Lifecycle Management (WSLM) node contains systems that represents full lifecycle management, cradle-to-grave, of Defense acquisition of weapon systems and automated information systems to include requirements, technology, development, production, and sustainment.";
+					    break;
+					default:
+						descr="";
+				}
+
+				document.getElementById("SysNodeDesc").innerHTML = descr;
+			}
+		</script>
+		<div id="pageTitle">
+			Business Enterprise Architecture 10.0
+		</div>
+		<div id="backgroundDiv">
+			<b>Background</b>: The Office of the Deputy Chief Management Officer annually delivers the BEA for the Department of Defense Business Mission Area to help defense business system owners and program managers make informed decisions. BEA 10.0 was officially delivered February 14, 2013.
+		</div>
+		<div id="descrDiv">
+			<b>Description</b>: The SV-6 (Systems Resource Flow Matrix) is one of many system views that comprise the BEA.  It shows the information exchanges (IEs) between automated BEA systems.  The visualization below represents the matrix as a chord diagram. The BEA systems are aggregated based on System Node (Core Business Mission). These eight System Nodes, represented as arcs, are positioned along the circumference of a circle. The IEs between System Nodes are represented as quadratic Bézier curves. IE directionality is represented by arc color. The size of the curve indicates the volume of IEs. Hover over a curve to see the number of IEs between System Nodes.
+		</div>
+		<div id="sysNodeDefs">
+			<table>
+				<tr>
+					<td colspan="2" style="font-size: 16px;">System Node (Core Business Mission)</td>
+				</tr>
+				<tr>
+					<td style="width: 65px; background-color:#e41a1c; color:white; padding-left:5px;" onmouseover="sysNodeHover(this);">Enterprise</td>
+					<td>Enterprise DoD Systems</td>
+				</tr>
+				<tr>
+					<td style="width: 65px; background-color:#377eb8; color:white; padding-left:5px;" onmouseover="sysNodeHover(this)">External</td>
+					<td>Non DoD Systems</td>
+				</tr>
+				<tr>
+					<td style="width: 65px; background-color:#4daf4a; color:white; padding-left:5px;" onmouseover="sysNodeHover(this)">FM</td>
+					<td>Financial Management</td>
+				</tr>
+				<tr>
+					<td style="width: 65px; background-color:#984ea3; color:white; padding-left:5px;" onmouseover="sysNodeHover(this)">GSA</td>
+					<td>General Services Administration</td>
+				</tr>
+				<tr>
+					<td style="width: 65px; background-color:#ff7f00; color:white; padding-left:5px;" onmouseover="sysNodeHover(this)">HRM</td>
+					<td>Human Resources Management</td>
+				</tr>
+				<tr>
+					<td style="width: 65px; background-color:#ffff33; padding-left:5px;" onmouseover="sysNodeHover(this)">MSSM</td>
+					<td>Materiel Supply and Service Management</td>
+				</tr>
+				<tr>
+					<td style="width: 65px; background-color:#a65628; color:white; padding-left:5px;" onmouseover="sysNodeHover(this)">RPILM</td>
+					<td>Real Property and Installations Lifecycle Management</td>
+				</tr>
+				<tr>
+					<td style="width: 65px; background-color:#f781bf; padding-left:5px;" onmouseover="sysNodeHover(this)">WSLM</td>
+					<td>Weapon System Lifecycle Management</td>
+				</tr>
+			</table>
+		</div>
+		<div id="SysNodeDesc">
+
+		</div>
+		<div id="dataSource">
+			Source: http://dcmo.defense.gov/products-and-services/business-enterprise-architecture/10.0/classic/index.htm
+		</div>
+	</body>
+</html>
